@@ -16,8 +16,13 @@ export default function RootLayout({
     <html lang="uk" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className="min-h-screen bg-neutral-50 text-neutral-900 antialiased"
+        className="min-h-screen bg-neutral-50 text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100"
       >
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark')}}catch(e){}})();`,
+          }}
+        />
         {children}
       </body>
     </html>

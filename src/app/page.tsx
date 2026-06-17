@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { AnalysisResult, Status } from "@/lib/keywords";
 
 interface ApiResponse {
@@ -30,10 +30,56 @@ function CopyIcon() {
   );
 }
 
+function SunIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
+  );
+}
+
 const STATUS_STYLES: Record<Status, { label: string; cls: string }> = {
-  increase: { label: "Додати", cls: "bg-amber-100 text-amber-800" },
-  reduce: { label: "Зменшити", cls: "bg-rose-100 text-rose-800" },
-  ok: { label: "OK", cls: "bg-emerald-100 text-emerald-800" },
+  increase: {
+    label: "Додати",
+    cls: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300",
+  },
+  reduce: {
+    label: "Зменшити",
+    cls: "bg-rose-100 text-rose-800 dark:bg-rose-500/15 dark:text-rose-300",
+  },
+  ok: {
+    label: "OK",
+    cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300",
+  },
 };
 
 const STATUS_RANK: Record<Status, number> = { increase: 0, reduce: 1, ok: 2 };
@@ -60,6 +106,9 @@ function parseRange(s: string): [number, number] | null {
 
 const TOLERANCE_OPTIONS = [0, 5, 10, 15, 20, 30, 40, 50];
 
+const inputCls =
+  "w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 shadow-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-neutral-100 dark:focus:ring-neutral-100";
+
 export default function Home() {
   const [docUrl, setDocUrl] = useState("");
   const [keywordsRaw, setKeywordsRaw] = useState("");
@@ -79,6 +128,24 @@ export default function Home() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [targetFilter, setTargetFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    setTheme(
+      document.documentElement.classList.contains("dark") ? "dark" : "light",
+    );
+  }, []);
+
+  function toggleTheme() {
+    setTheme((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      document.documentElement.classList.toggle("dark", next === "dark");
+      try {
+        localStorage.setItem("theme", next);
+      } catch {}
+      return next;
+    });
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -174,13 +241,26 @@ export default function Home() {
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
       {/* Сайдбар з усіма діями */}
-      <aside className="w-full shrink-0 border-b border-neutral-200 bg-white p-5 lg:sticky lg:top-0 lg:h-screen lg:w-96 lg:overflow-y-auto lg:border-b-0 lg:border-r">
-        <h1 className="text-lg font-semibold tracking-tight">
-          Підрахунок ключових слів
-        </h1>
-        <p className="mt-1 text-xs text-neutral-500">
-          Публічний Google-документ + дві колонки «ключ / кількість».
-        </p>
+      <aside className="w-full shrink-0 border-b border-neutral-200 bg-white p-5 lg:sticky lg:top-0 lg:h-screen lg:w-96 lg:overflow-y-auto lg:border-b-0 lg:border-r dark:border-neutral-800 dark:bg-neutral-900">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-lg font-semibold tracking-tight">
+              Підрахунок ключових слів
+            </h1>
+            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+              Публічний Google-документ + дві колонки «ключ / кількість».
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label="Змінити тему"
+            title="Світла / темна тема"
+            className="shrink-0 rounded-lg border border-neutral-300 bg-white p-2 text-neutral-600 transition hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+          >
+            {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-5">
           <div>
@@ -193,7 +273,7 @@ export default function Home() {
               value={docUrl}
               onChange={(e) => setDocUrl(e.target.value)}
               placeholder="https://docs.google.com/document/d/.../edit"
-              className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+              className={inputCls}
             />
           </div>
 
@@ -207,9 +287,9 @@ export default function Home() {
               onChange={(e) => setKeywordsRaw(e.target.value)}
               rows={9}
               placeholder={"робота\n5\nпошук талантів\n10-15\nрезюме\n2"}
-              className="w-full resize-y rounded-lg border border-neutral-300 bg-white px-3 py-2 font-mono text-sm shadow-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+              className={`${inputCls} resize-y font-mono`}
             />
-            <p className="mt-1 text-xs text-neutral-500">
+            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
               Ключ і число — на сусідніх рядках або в один рядок через
               табуляцію/кому. Кількість: число (5) або діапазон (10-15).
             </p>
@@ -220,14 +300,14 @@ export default function Home() {
               <label htmlFor="tolerance" className="text-sm font-medium">
                 Допустима розбіжність
               </label>
-              <div className="inline-flex overflow-hidden rounded-md border border-neutral-300 text-xs">
+              <div className="inline-flex overflow-hidden rounded-md border border-neutral-300 text-xs dark:border-neutral-700">
                 <button
                   type="button"
                   onClick={() => setToleranceMode("percent")}
                   className={`px-2.5 py-1 font-medium transition ${
                     toleranceMode === "percent"
-                      ? "bg-neutral-900 text-white"
-                      : "bg-white text-neutral-600 hover:bg-neutral-50"
+                      ? "bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900"
+                      : "bg-white text-neutral-600 hover:bg-neutral-50 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
                   }`}
                 >
                   %
@@ -235,10 +315,10 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setToleranceMode("absolute")}
-                  className={`border-l border-neutral-300 px-2.5 py-1 font-medium transition ${
+                  className={`border-l border-neutral-300 px-2.5 py-1 font-medium transition dark:border-neutral-700 ${
                     toleranceMode === "absolute"
-                      ? "bg-neutral-900 text-white"
-                      : "bg-white text-neutral-600 hover:bg-neutral-50"
+                      ? "bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900"
+                      : "bg-white text-neutral-600 hover:bg-neutral-50 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
                   }`}
                 >
                   Число
@@ -250,7 +330,7 @@ export default function Home() {
                 id="tolerance"
                 value={tolerancePercent}
                 onChange={(e) => setTolerancePercent(Number(e.target.value))}
-                className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+                className={inputCls}
               >
                 {TOLERANCE_OPTIONS.map((v) => (
                   <option key={v} value={v}>
@@ -267,22 +347,22 @@ export default function Home() {
                 value={toleranceAbs}
                 onChange={(e) => setToleranceAbs(e.target.value)}
                 placeholder="напр. 3"
-                className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+                className={inputCls}
               />
             )}
-            <p className="mt-1 text-xs text-neutral-500">
+            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
               {toleranceMode === "percent"
                 ? "Наскільки (у %) можна відхилятися від цілі й вважати нормою."
                 : "На скільки одиниць можна відхилятися від цілі (напр. ±3)."}
             </p>
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-neutral-700">
+          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
             <input
               type="checkbox"
               checked={caseSensitive}
               onChange={(e) => setCaseSensitive(e.target.checked)}
-              className="h-4 w-4 rounded border-neutral-300"
+              className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600"
             />
             Враховувати регістр
           </label>
@@ -290,7 +370,7 @@ export default function Home() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300"
           >
             {loading ? "Аналізую…" : "Порахувати"}
           </button>
@@ -300,13 +380,13 @@ export default function Home() {
       {/* Головна область з результатами */}
       <main className="flex-1 p-5 sm:p-8">
         {error && (
-          <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">
             {error}
           </div>
         )}
 
         {!data && !error && (
-          <div className="flex h-full min-h-[40vh] items-center justify-center text-center text-sm text-neutral-400">
+          <div className="flex h-full min-h-[40vh] items-center justify-center text-center text-sm text-neutral-400 dark:text-neutral-500">
             Заповніть форму ліворуч і натисніть «Порахувати» — результати
             зʼявляться тут.
           </div>
@@ -322,7 +402,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={copyOutput}
-                    className="rounded-md border border-neutral-300 bg-white px-3 py-1 text-xs font-medium text-neutral-700 shadow-sm transition hover:bg-neutral-50"
+                    className="rounded-md border border-neutral-300 bg-white px-3 py-1 text-xs font-medium text-neutral-700 shadow-sm transition hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
                   >
                     {copied ? "Скопійовано ✓" : "Копіювати"}
                   </button>
@@ -334,45 +414,45 @@ export default function Home() {
                   aria-label="Відповідь"
                   value={data.output}
                   rows={Math.min(data.output.split("\n").length + 1, 16)}
-                  className="w-full resize-y rounded-lg border border-neutral-300 bg-neutral-50 px-3 py-2 font-mono text-sm text-neutral-800 outline-none"
+                  className="w-full resize-y rounded-lg border border-neutral-300 bg-neutral-50 px-3 py-2 font-mono text-sm text-neutral-800 outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
                 />
               ) : (
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
                   Усе в межах норми — змінювати нічого не треба.
                 </div>
               )}
             </div>
 
             {/* Зведення */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-500">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-500 dark:text-neutral-400">
               <span>
                 Ключів:{" "}
-                <strong className="text-neutral-800">
+                <strong className="text-neutral-800 dark:text-neutral-100">
                   {data.results.length}
                 </strong>
               </span>
               <span>
                 Допустима розбіжність:{" "}
-                <strong className="text-neutral-800">
+                <strong className="text-neutral-800 dark:text-neutral-100">
                   {appliedToleranceLabel}
                 </strong>
               </span>
               <span>
                 Слів у документі:{" "}
-                <strong className="text-neutral-800">
+                <strong className="text-neutral-800 dark:text-neutral-100">
                   {data.wordCount.toLocaleString("uk")}
                 </strong>
               </span>
               <span>
                 Символів у документі:{" "}
-                <strong className="text-neutral-800">
+                <strong className="text-neutral-800 dark:text-neutral-100">
                   {data.charCount.toLocaleString("uk")}
                 </strong>
               </span>
             </div>
 
             {data.warnings.length > 0 && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
                 <ul className="list-disc space-y-0.5 pl-4">
                   {data.warnings.map((w, i) => (
                     <li key={i}>{w}</li>
@@ -385,7 +465,10 @@ export default function Home() {
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-3 text-sm">
                 <div className="flex items-center gap-2">
-                  <label htmlFor="target-filter" className="text-neutral-500">
+                  <label
+                    htmlFor="target-filter"
+                    className="text-neutral-500 dark:text-neutral-400"
+                  >
                     Ціль:
                   </label>
                   <input
@@ -394,11 +477,14 @@ export default function Home() {
                     value={targetFilter}
                     onChange={(e) => setTargetFilter(e.target.value)}
                     placeholder="напр. 5 або 10-15"
-                    className="w-36 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm shadow-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+                    className={`${inputCls} w-36`}
                   />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label htmlFor="status-filter" className="text-neutral-500">
+                  <label
+                    htmlFor="status-filter"
+                    className="text-neutral-500 dark:text-neutral-400"
+                  >
                     Статус:
                   </label>
                   <select
@@ -407,7 +493,7 @@ export default function Home() {
                     onChange={(e) =>
                       setStatusFilter(e.target.value as Status | "all")
                     }
-                    className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm shadow-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+                    className={`${inputCls} w-auto`}
                   >
                     <option value="all">Усі</option>
                     <option value="increase">Додати</option>
@@ -416,22 +502,22 @@ export default function Home() {
                   </select>
                 </div>
                 {(targetFilter.trim() !== "" || statusFilter !== "all") && (
-                  <span className="text-xs text-neutral-400">
+                  <span className="text-xs text-neutral-400 dark:text-neutral-500">
                     показано {rows.length} з {data.results.length}
                   </span>
                 )}
               </div>
 
-              <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm">
+              <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
                 <table className="w-full text-sm">
-                  <thead className="bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-500">
+                  <thead className="bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-500 dark:bg-neutral-800/50 dark:text-neutral-400">
                     <tr>
                       <th className="px-4 py-2.5 font-medium">Ключове слово</th>
                       <th className="px-4 py-2.5 text-center font-medium">
                         <button
                           type="button"
                           onClick={() => toggleSort("found")}
-                          className="inline-flex items-center transition hover:text-neutral-800"
+                          className="inline-flex items-center transition hover:text-neutral-800 dark:hover:text-neutral-100"
                         >
                           Знайдено{sortArrow("found")}
                         </button>
@@ -440,7 +526,7 @@ export default function Home() {
                         <button
                           type="button"
                           onClick={() => toggleSort("target")}
-                          className="inline-flex items-center transition hover:text-neutral-800"
+                          className="inline-flex items-center transition hover:text-neutral-800 dark:hover:text-neutral-100"
                         >
                           Ціль{sortArrow("target")}
                         </button>
@@ -449,19 +535,19 @@ export default function Home() {
                         <button
                           type="button"
                           onClick={() => toggleSort("status")}
-                          className="inline-flex items-center transition hover:text-neutral-800"
+                          className="inline-flex items-center transition hover:text-neutral-800 dark:hover:text-neutral-100"
                         >
                           Статус{sortArrow("status")}
                         </button>
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-100">
+                  <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                     {rows.length === 0 ? (
                       <tr>
                         <td
                           colSpan={4}
-                          className="px-4 py-6 text-center text-sm text-neutral-400"
+                          className="px-4 py-6 text-center text-sm text-neutral-400 dark:text-neutral-500"
                         >
                           Немає ключів за обраним фільтром.
                         </td>
@@ -479,10 +565,10 @@ export default function Home() {
                                   onClick={() => copyKeyword(r.keyword, r.idx)}
                                   title="Копіювати ключове слово"
                                   aria-label="Копіювати ключове слово"
-                                  className="shrink-0 rounded p-1 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"
+                                  className="shrink-0 rounded p-1 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
                                 >
                                   {copiedKw === r.idx ? (
-                                    <span className="text-xs font-medium text-emerald-600">
+                                    <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
                                       ✓
                                     </span>
                                   ) : (
@@ -494,7 +580,7 @@ export default function Home() {
                             <td className="px-4 py-2.5 text-center tabular-nums">
                               {r.found}
                             </td>
-                            <td className="px-4 py-2.5 text-center tabular-nums text-neutral-500">
+                            <td className="px-4 py-2.5 text-center tabular-nums text-neutral-500 dark:text-neutral-400">
                               {r.target}
                             </td>
                             <td className="px-4 py-2.5 text-center">

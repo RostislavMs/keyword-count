@@ -1,7 +1,14 @@
 @import "tailwindcss";
 
+/* Темна тема вмикається класом .dark на <html> (а не лише за системною). */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
 }
 
 html,

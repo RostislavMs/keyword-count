@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rtk npm *)",
+      "Bash(node -e ' *)",
+      "Bash(pnpm --version)",
+      "Bash(rtk pnpm *)",
+      "Bash(echo \"install exit: $?\")",
+      "Bash(rtk next *)",
+      "Bash(echo \"build exit: $?\")",
+      "Bash(rtk proxy *)",
+      "Bash(echo \"RAW install exit: $?\")",
+      "Bash(echo \"=== install exit: $? ===\")",
+      "Bash(echo \"=== build exit: $? ===\")",
+      "Bash(echo \"=== rebuild exit: $? ===\")",
+      "Bash(rtk grep *)",
+      "Bash(echo \"rm .next exit: $?\")",
+      "Bash(echo \"tsc exit: $?\")"
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+# Дозволяємо запуск build-скрипта для sharp (опційна залежність Next).
+# pnpm 11 читає це звідси; ключ allowBuilds — пакет: true/false.
+allowBuilds:
+  sharp: true

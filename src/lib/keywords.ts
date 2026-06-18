@@ -23,6 +23,11 @@ export interface AnalysisResult {
 
 export interface CountOptions {
   caseSensitive?: boolean;
+  /**
+   * Ігнорувати діакритику: "casinò" і "casino" вважати одним словом
+   * (італійські акценти, шведські å/ä/ö тощо). Стандартно увімкнено.
+   */
+  ignoreDiacritics?: boolean;
 }
 
 export interface AnalyzeOptions extends CountOptions {
@@ -39,6 +44,15 @@ function escapeRegExp(s: string): string {
 }
 
 /**
+ * Прибирає діакритичні знаки (акценти, умляути): "casinò" → "casino",
+ * "Malmö" → "Malmo". Працює через Unicode-нормалізацію NFD — символ
+ * розкладається на базову літеру + комбінований знак, який ми відкидаємо.
+ */
+function foldDiacritics(s: string): string {
+  return s.normalize("NFD").replace(/\p{M}+/gu, "");
+}
+
+/**
  * Рахує точні входження ключа: ціле слово / точна фраза.
  * Межі слова визначаються через Unicode-літери та цифри (працює з кирилицею),
  * тому "робота" НЕ зараховується всередині "роботи" чи "роботодавець".
@@ -51,8 +65,14 @@ export function countOccurrences(
   const kw = keyword.trim();
   if (!kw) return 0;
 
+  // Стандартно прирівнюємо літери з акцентами до базових (NFD-фолдинг),
+  // щоб "casinò" і "casino" рахувалися як одне слово.
+  const fold = opts.ignoreDiacritics !== false;
+  const haystack = fold ? foldDiacritics(text) : text;
+  const needle = fold ? foldDiacritics(kw) : kw;
+
   // Екрануємо спецсимволи, внутрішні пробіли робимо гнучкими (\s+).
-  const escaped = escapeRegExp(kw).replace(/\s+/g, "\\s+");
+  const escaped = escapeRegExp(needle).replace(/\s+/g, "\\s+");
   const flags = opts.caseSensitive ? "gu" : "giu";
   // Межа слова враховує також дефіс і підкреслення, тому "Pay N Play" не
   // зараховується всередині складеного "Pay N Play-lösningar".
@@ -66,7 +86,7 @@ export function countOccurrences(
     re = new RegExp(`(?:${escaped})`, flags);
   }
 
-  const matches = text.match(re);
+  const matches = haystack.match(re);
   return matches ? matches.length : 0;
 }
 

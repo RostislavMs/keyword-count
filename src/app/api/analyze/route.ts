@@ -105,9 +105,13 @@ export async function POST(req: Request) {
     tolerance,
     toleranceMode: mode,
   });
-  // У відповідь — лише те, що треба змінити (без рядків зі статусом «ok»).
-  const output = results
-    .filter((r) => r.status !== "ok")
+  // Відповідь розбита на дві: окремо те, що треба збільшити, і те — зменшити.
+  const increaseOutput = results
+    .filter((r) => r.status === "increase")
+    .map((r) => r.line)
+    .join("\n");
+  const reduceOutput = results
+    .filter((r) => r.status === "reduce")
     .map((r) => r.line)
     .join("\n");
 
@@ -115,7 +119,8 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     results,
-    output,
+    increaseOutput,
+    reduceOutput,
     warnings,
     charCount: text.length,
     wordCount,

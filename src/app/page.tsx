@@ -5,7 +5,8 @@ import type { AnalysisResult, Status } from "@/lib/keywords";
 
 interface ApiResponse {
   results: AnalysisResult[];
-  output: string;
+  increaseOutput: string;
+  reduceOutput: string;
   warnings: string[];
   charCount: number;
   wordCount: number;
@@ -109,6 +110,54 @@ const TOLERANCE_OPTIONS = [0, 5, 10, 15, 20, 30, 40, 50];
 const inputCls =
   "w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 shadow-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus:border-neutral-100 dark:focus:ring-neutral-100";
 
+const answerCls =
+  "w-full resize-y rounded-lg border border-neutral-300 bg-neutral-50 px-3 py-2 font-mono text-sm text-neutral-800 outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200";
+
+const copyBtnCls =
+  "rounded-md border border-neutral-300 bg-white px-3 py-1 text-xs font-medium text-neutral-700 shadow-sm transition hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700";
+
+/** Одна колонка відповіді: «Збільшити» або «Зменшити». */
+function AnswerBox({
+  title,
+  value,
+  emptyLabel,
+  copied,
+  onCopy,
+}: {
+  title: string;
+  value: string;
+  emptyLabel: string;
+  copied: boolean;
+  onCopy: () => void;
+}) {
+  const has = value.trim().length > 0;
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center justify-between">
+        <label className="text-sm font-medium">{title}</label>
+        {has && (
+          <button type="button" onClick={onCopy} className={copyBtnCls}>
+            {copied ? "Скопійовано ✓" : "Копіювати"}
+          </button>
+        )}
+      </div>
+      {has ? (
+        <textarea
+          readOnly
+          aria-label={title}
+          value={value}
+          rows={Math.min(value.split("\n").length + 1, 16)}
+          className={answerCls}
+        />
+      ) : (
+        <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-400 dark:border-neutral-800 dark:bg-neutral-800/50 dark:text-neutral-500">
+          {emptyLabel}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Home() {
   const [docUrl, setDocUrl] = useState("");
   const [keywordsRaw, setKeywordsRaw] = useState("");
@@ -122,7 +171,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<ApiResponse | null>(null);
   const [appliedToleranceLabel, setAppliedToleranceLabel] = useState("0%");
-  const [copied, setCopied] = useState(false);
+  const [copiedBox, setCopiedBox] = useState<"increase" | "reduce" | null>(null);
   const [copiedKw, setCopiedKw] = useState<number | null>(null);
   const [sortCol, setSortCol] = useState<SortCol | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -152,7 +201,7 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setData(null);
-    setCopied(false);
+    setCopiedBox(null);
 
     const toleranceValue =
       toleranceMode === "absolute"
@@ -187,11 +236,10 @@ export default function Home() {
     }
   }
 
-  async function copyOutput() {
-    if (!data) return;
-    await navigator.clipboard.writeText(data.output);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+  async function copyBox(text: string, box: "increase" | "reduce") {
+    await navigator.clipboard.writeText(text);
+    setCopiedBox(box);
+    setTimeout(() => setCopiedBox(null), 1500);
   }
 
   async function copyKeyword(keyword: string, i: number) {
@@ -394,34 +442,29 @@ export default function Home() {
 
         {data && (
           <section className="space-y-6">
-            {/* Відповідь — нагорі */}
-            <div>
-              <div className="mb-1.5 flex items-center justify-between">
-                <label className="text-sm font-medium">Відповідь</label>
-                {data.output.trim() && (
-                  <button
-                    type="button"
-                    onClick={copyOutput}
-                    className="rounded-md border border-neutral-300 bg-white px-3 py-1 text-xs font-medium text-neutral-700 shadow-sm transition hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
-                  >
-                    {copied ? "Скопійовано ✓" : "Копіювати"}
-                  </button>
-                )}
-              </div>
-              {data.output.trim() ? (
-                <textarea
-                  readOnly
-                  aria-label="Відповідь"
-                  value={data.output}
-                  rows={Math.min(data.output.split("\n").length + 1, 16)}
-                  className="w-full resize-y rounded-lg border border-neutral-300 bg-neutral-50 px-3 py-2 font-mono text-sm text-neutral-800 outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
+            {/* Відповідь — нагорі, дві колонки: збільшити / зменшити */}
+            {data.increaseOutput.trim() || data.reduceOutput.trim() ? (
+              <div className="grid gap-5 sm:grid-cols-2">
+                <AnswerBox
+                  title="Збільшити"
+                  value={data.increaseOutput}
+                  emptyLabel="Нічого додавати."
+                  copied={copiedBox === "increase"}
+                  onCopy={() => copyBox(data.increaseOutput, "increase")}
                 />
-              ) : (
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
-                  Усе в межах норми — змінювати нічого не треба.
-                </div>
-              )}
-            </div>
+                <AnswerBox
+                  title="Зменшити"
+                  value={data.reduceOutput}
+                  emptyLabel="Нічого зменшувати."
+                  copied={copiedBox === "reduce"}
+                  onCopy={() => copyBox(data.reduceOutput, "reduce")}
+                />
+              </div>
+            ) : (
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
+                Усе в межах норми — змінювати нічого не треба.
+              </div>
+            )}
 
             {/* Зведення */}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-500 dark:text-neutral-400">

@@ -15,7 +15,10 @@
       "Bash(echo \"=== rebuild exit: $? ===\")",
       "Bash(rtk grep *)",
       "Bash(echo \"rm .next exit: $?\")",
-      "Bash(echo \"tsc exit: $?\")"
+      "Bash(echo \"tsc exit: $?\")",
+      "Bash(rtk git *)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(node d:/SEO/project/dtest.mjs)"
     ]
   }
 }

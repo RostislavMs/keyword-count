@@ -218,6 +218,38 @@ export function analyze(
   });
 }
 
+/**
+ * Рахує слова й символи так, як це робить лічильник Google Docs
+ * (Ctrl+Shift+C), а не «сирий» .txt-експорт, який зазвичай завищує:
+ *  - прибираємо BOM на початку файлу;
+ *  - прибираємо рядок назви документа, який Google дописує зверху
+ *    (сигнатура: перший рядок, далі порожній рядок);
+ *  - символи рахуємо БЕЗ переносів рядків — Docs не рахує розриви абзаців
+ *    (але пробіли рахуємо, як і головне число в діалозі Docs);
+ *  - словом вважаємо лише токен, що містить літеру або цифру, тож маркери
+ *    списків і поодинокі «—», «•», «|» не зараховуються.
+ */
+export function documentStats(rawText: string): {
+  wordCount: number;
+  charCount: number;
+} {
+  // 1) BOM на початку експорту.
+  let text = rawText.replace(/^﻿/, "");
+
+  // 2) Назва документа першим рядком + порожній рядок під нею.
+  const titleBlock = text.match(/^[^\r\n]*\r?\n[ \t]*\r?\n/);
+  if (titleBlock) text = text.slice(titleBlock[0].length);
+
+  // 3) Слова — лише токени з хоча б однією літерою/цифрою.
+  const tokens = text.match(/\S+/gu) ?? [];
+  const wordCount = tokens.filter((t) => /[\p{L}\p{N}]/u.test(t)).length;
+
+  // 4) Символи — усе, крім переносів рядків.
+  const charCount = text.replace(/[\r\n]+/g, "").length;
+
+  return { wordCount, charCount };
+}
+
 /** Дістає ID Google-документа з посилання або приймає сам ID. */
 export function extractDocId(input: string): string | null {
   const s = input.trim();

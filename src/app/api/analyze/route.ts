@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { analyze, extractDocId, parseKeywords } from "@/lib/keywords";
+import {
+  analyze,
+  documentStats,
+  extractDocId,
+  parseKeywords,
+} from "@/lib/keywords";
 
 export const runtime = "nodejs";
 
@@ -115,14 +120,14 @@ export async function POST(req: Request) {
     .map((r) => r.line)
     .join("\n");
 
-  const wordCount = (text.match(/\S+/g) ?? []).length;
+  const { wordCount, charCount } = documentStats(text);
 
   return NextResponse.json({
     results,
     increaseOutput,
     reduceOutput,
     warnings,
-    charCount: text.length,
+    charCount,
     wordCount,
   });
 }
